@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>뒷조사 — SNS 프로필 추리</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<style>
+  :root{
+    --bg:#FFF9F4;
+    --card:#FFFFFF;
+    --ink:#23242B;
+    --sub:#8A8D98;
+    --line:#F0EBE4;
+    --pink:#FF5C8A;
+    --violet:#8E6BFF;
+    --grad:linear-gradient(135deg,#FF5C8A 0%,#FF8E53 50%,#8E6BFF 100%);
+    --ok:#2FB673;
+    --bad:#FF4D6D;
+    --radius:18px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    background:var(--bg);color:var(--ink);
+    font-family:'Pretendard Variable',Pretendard,-apple-system,'Apple SD Gothic Neo','Noto Sans KR',sans-serif;
+    display:flex;justify-content:center;
+  }
+  #app{width:100%;max-width:460px;min-height:100dvh;display:flex;flex-direction:column;background:var(--bg)}
+  @media(min-width:600px){
+    body{padding:24px 0}
+    #app{min-height:calc(100dvh - 48px);border:1px solid var(--line);border-radius:28px;overflow:hidden;box-shadow:0 24px 60px rgba(35,36,43,.08)}
+  }
+
+  /* ── 상단 바 ── */
+  .topbar{
+    position:sticky;top:0;z-index:20;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 18px;background:rgba(255,249,244,.92);backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line);
+  }
+  .logo{font-weight:800;font-size:20px;letter-spacing:-.5px;cursor:pointer}
+  .logo em{font-style:normal;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hearts{display:flex;gap:4px;font-size:18px}
+  .hearts .off{filter:grayscale(1);opacity:.3}
+  .topbar .back{border:none;background:none;font-size:15px;color:var(--sub);cursor:pointer;font-family:inherit}
+
+  /* ── 홈 ── */
+  .home{padding:26px 20px 40px;display:flex;flex-direction:column;gap:14px}
+  .home h1{font-size:26px;font-weight:800;letter-spacing:-.6px;line-height:1.3}
+  .home .desc{color:var(--sub);font-size:14px;line-height:1.6;margin-bottom:6px}
+  .mode-label{font-size:13px;font-weight:700;color:var(--sub);letter-spacing:.06em;margin-top:10px}
+  .level-card,.daily-card{
+    display:flex;align-items:center;gap:14px;
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:16px 18px;cursor:pointer;text-align:left;width:100%;
+    font-family:inherit;transition:transform .12s ease,box-shadow .12s ease;
+  }
+  .level-card:not(.locked):hover,.daily-card:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(35,36,43,.07)}
+  .level-card:focus-visible,.daily-card:focus-visible,.chip:focus-visible,.btn:focus-visible,.cell:focus-visible,.tab:focus-visible{outline:3px solid var(--violet);outline-offset:2px}
+  .level-card.locked{opacity:.45;cursor:not-allowed}
+  .lv-ava{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;background:var(--bg);flex-shrink:0}
+  .lv-ava.ring{background:var(--grad);padding:2.5px}
+  .lv-ava.ring span{width:100%;height:100%;border-radius:50%;background:var(--card);display:flex;align-items:center;justify-content:center}
+  .lv-info{flex:1;min-width:0}
+  .lv-info .t{font-weight:700;font-size:15px}
+  .lv-info .s{font-size:13px;color:var(--sub);margin-top:2px}
+  .lv-state{font-size:18px}
+  .daily-card{background:linear-gradient(135deg,#FFF0F5,#F3EFFF);border:none}
+
+  /* ── 게임: 3영역 레이아웃 ── */
+  .game{padding:16px 16px 130px;display:flex;flex-direction:column;gap:10px}
+  .sec-label{
+    font-size:12px;font-weight:800;color:var(--sub);letter-spacing:.08em;
+    padding:8px 6px 2px;display:flex;align-items:center;gap:6px;
+  }
+  .sec-label .n{
+    width:18px;height:18px;border-radius:50%;background:var(--grad);color:#fff;
+    display:inline-flex;align-items:center;justify-content:center;font-size:11px;
+  }
+
+  /* [1] 추리 보드 */
+  .board{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px}
+  .board .guide{font-size:12.5px;color:var(--sub);margin-bottom:10px}
+  .slots{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{
+    border:1.5px dashed #D9D2C8;background:var(--bg);border-radius:999px;
+    padding:8px 14px;font-size:13.5px;font-weight:600;font-family:inherit;cursor:pointer;
+    color:var(--ink);display:flex;gap:6px;align-items:center;
+    transition:border-color .15s,background .15s;
+  }
+  .chip .k{color:var(--sub);font-weight:500}
+  .chip .v{font-weight:700}
+  .chip.filled{border-style:solid;border-color:#CBB8FF;background:#F6F2FF}
+  .chip.ok{border-style:solid;border-color:var(--ok);background:#EAF8F1;cursor:default}
+  .chip.ok .v::after{content:' ✓';color:var(--ok)}
+  .chip.bad{border-style:solid;border-color:var(--bad);background:#FFF0F3;animation:shake .4s}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+  /* [2] 단서 피드 = 인스타 프로필 */
+  .feed{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+  .ig-top{padding:18px 18px 0}
+  .ig-head{display:flex;align-items:center;gap:18px}
+  .p-ava{width:72px;height:72px;border-radius:50%;background:var(--grad);padding:3px;flex-shrink:0}
+  .p-ava span{width:100%;height:100%;border-radius:50%;background:var(--card);display:flex;align-items:center;justify-content:center;font-size:34px}
+  .ig-stats{flex:1;display:flex;justify-content:space-around;text-align:center}
+  .ig-stats b{display:block;font-size:16px;font-weight:800}
+  .ig-stats span{font-size:12px;color:var(--sub)}
+  .ig-name{font-weight:800;font-size:15px;margin-top:12px}
+  .ig-handle{font-size:12.5px;color:var(--sub)}
+  .ig-bio{font-size:13.5px;line-height:1.55;color:#4A4C57;margin-top:6px;padding-bottom:14px}
+  .tabs{display:flex;border-top:1px solid var(--line)}
+  .tab{
+    flex:1;border:none;background:none;font-family:inherit;font-size:13.5px;font-weight:700;
+    color:var(--sub);padding:12px 0;cursor:pointer;border-top:2px solid transparent;margin-top:-1px;
+    display:flex;align-items:center;justify-content:center;gap:6px;
+  }
+  .tab.on{color:var(--ink);border-top-color:var(--ink)}
+  .tab .badge{
+    background:var(--pink);color:#fff;font-size:10.5px;font-weight:800;
+    border-radius:999px;padding:1px 6px;
+  }
+
+  /* 9분할 그리드 */
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:var(--line)}
+  .cell{
+    aspect-ratio:1;border:none;cursor:pointer;position:relative;font-family:inherit;
+    display:flex;align-items:center;justify-content:center;font-size:38px;padding:0;
+  }
+  .cell:hover{filter:brightness(.96)}
+  .cell .cm-mark{position:absolute;top:6px;right:8px;font-size:12px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.15))}
+  .cell .new{
+    position:absolute;bottom:6px;left:8px;font-size:9.5px;font-weight:800;color:#fff;
+    background:var(--pink);border-radius:999px;padding:2px 7px;letter-spacing:.05em;
+  }
+
+  /* DM 목록 */
+  .dm-list{display:flex;flex-direction:column}
+  .dm-item{
+    display:flex;align-items:center;gap:12px;padding:14px 18px;border:none;background:none;
+    font-family:inherit;cursor:pointer;text-align:left;border-bottom:1px solid var(--line);
+  }
+  .dm-item:last-child{border-bottom:none}
+  .dm-item:hover{background:var(--bg)}
+  .dm-item .ava{width:44px;height:44px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+  .dm-item .info{flex:1;min-width:0}
+  .dm-item .who{font-size:14px;font-weight:700}
+  .dm-item .prev{font-size:12.5px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+  .dm-item .new{font-size:9.5px;font-weight:800;color:#fff;background:var(--pink);border-radius:999px;padding:2px 7px}
+  .dm-empty{padding:34px 18px;text-align:center;color:var(--sub);font-size:13.5px}
+
+  /* ── [3] 판정 (하단 고정) ── */
+  .actions{
+    position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+    width:100%;max-width:460px;padding:10px 16px 20px;
+    background:linear-gradient(to top,var(--bg) 75%,transparent);
+    z-index:15;
+  }
+  .actions .row{display:flex;gap:10px}
+  .btn{
+    flex:1;border:none;border-radius:14px;padding:15px;font-size:15.5px;font-weight:800;
+    font-family:inherit;cursor:pointer;letter-spacing:-.3px;
+  }
+  .btn.primary{background:var(--grad);color:#fff}
+  .btn.primary:disabled{background:#E4DFD8;color:#B0ACA4;cursor:not-allowed}
+  .btn.ghost{flex:0 0 auto;background:var(--card);border:1px solid var(--line);color:var(--ink);padding:15px 18px}
+  .btn.ghost:disabled{opacity:.4;cursor:not-allowed}
+
+  /* ── 오버레이 공통 ── */
+  .overlay{position:fixed;inset:0;background:rgba(30,25,40,.5);z-index:30;display:flex;align-items:flex-end;justify-content:center}
+  @media(min-width:600px){.overlay{align-items:center}}
+  @keyframes up{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+  .sheet{
+    background:var(--card);width:100%;max-width:460px;border-radius:24px 24px 0 0;
+    padding:22px 20px 28px;animation:up .22s ease;
+  }
+  @media(min-width:600px){.sheet{border-radius:24px;margin:0 20px}}
+  .sheet h3{font-size:16px;font-weight:800;margin-bottom:14px}
+  .opt{
+    display:block;width:100%;text-align:left;font-family:inherit;font-size:15px;font-weight:600;
+    padding:14px 16px;border-radius:14px;border:1.5px solid var(--line);background:var(--card);
+    margin-bottom:8px;cursor:pointer;color:var(--ink);
+  }
+  .opt:hover{border-color:var(--violet);background:#FBFAFF}
+
+  /* 게시물 상세 (인스타 스타일) */
+  .post-view{
+    background:var(--card);width:100%;max-width:460px;max-height:88dvh;
+    border-radius:24px 24px 0 0;overflow-y:auto;animation:up .22s ease;
+  }
+  @media(min-width:600px){.post-view{border-radius:24px;margin:0 20px;max-height:84dvh}}
+  .pv-head{
+    position:sticky;top:0;background:var(--card);z-index:2;
+    display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line);
+  }
+  .pv-head .ava{width:34px;height:34px;border-radius:50%;background:var(--grad);padding:2px;flex-shrink:0}
+  .pv-head .ava span{width:100%;height:100%;border-radius:50%;background:var(--card);display:flex;align-items:center;justify-content:center;font-size:16px}
+  .pv-head .who{font-size:13.5px;font-weight:700}
+  .pv-head .x{margin-left:auto;border:none;background:var(--bg);width:30px;height:30px;border-radius:50%;font-size:14px;cursor:pointer;color:var(--sub)}
+  .pv-img{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:96px}
+  .pv-actions{display:flex;gap:16px;padding:12px 16px 0;font-size:20px}
+  .pv-likes{padding:8px 16px 0;font-size:13px;font-weight:800}
+  .pv-cap{padding:6px 16px;font-size:14px;line-height:1.65;white-space:pre-wrap}
+  .pv-cap b{margin-right:6px}
+  .pv-date{padding:2px 16px 12px;font-size:11.5px;color:var(--sub)}
+  .pv-cm-label{padding:10px 16px 4px;font-size:12px;font-weight:800;color:var(--sub);border-top:1px solid var(--line)}
+  .pv-cm{display:flex;gap:10px;padding:10px 16px}
+  .pv-cm .ava{width:30px;height:30px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+  .pv-cm .txt{font-size:13.5px;line-height:1.55}
+  .pv-cm .txt b{margin-right:6px}
+  .pv-cm .just{font-size:10.5px;color:var(--pink);font-weight:700;margin-left:6px}
+  .pv-pad{height:14px}
+
+  /* DM 대화 (채팅) */
+  .chat{
+    background:var(--card);width:100%;max-width:460px;max-height:80dvh;
+    border-radius:24px 24px 0 0;display:flex;flex-direction:column;animation:up .22s ease;
+  }
+  @media(min-width:600px){.chat{border-radius:24px;margin:0 20px}}
+  .chat .pv-head{border-radius:24px 24px 0 0}
+  .chat-body{overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px}
+  .bubble{max-width:78%;padding:10px 14px;font-size:14px;line-height:1.55;border-radius:18px;white-space:pre-wrap}
+  .bubble.them{align-self:flex-start;background:var(--bg);border:1px solid var(--line);border-bottom-left-radius:6px}
+  .bubble.me{align-self:flex-end;background:var(--grad);color:#fff;border-bottom-right-radius:6px}
+  .chat-pad{height:16px;flex-shrink:0}
+
+  /* 결과 모달 & 토스트 */
+  .modal{background:var(--card);max-width:460px;width:calc(100% - 40px);margin:0 20px;border-radius:24px;padding:32px 24px;text-align:center;animation:up .22s ease}
+  .modal .big{font-size:46px;margin-bottom:12px}
+  .modal h2{font-size:20px;font-weight:800;margin-bottom:8px;letter-spacing:-.4px}
+  .modal p{font-size:14px;color:var(--sub);line-height:1.6;margin-bottom:20px}
+  .toast{
+    position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:40;
+    background:#2B2C34;color:#fff;font-size:13.5px;font-weight:600;
+    padding:11px 18px;border-radius:999px;animation:up .2s ease;white-space:nowrap;
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* ══════════════ 퍼즐 데이터 ══════════════
+   설계 원칙:
+   1) 정답 단어를 게시물/댓글에 직접 쓰지 않는다 — 정황으로만 추론
+   2) 각 슬롯은 단서 조합으로 유일하게 결정 가능해야 한다
+   3) filler는 분위기용, trap은 오답 단어를 '남 얘기'로 언급해 함정을 판다
+   4) slot.hint = 힌트 사용 시 해당 게시물에 달리는 '새 댓글' */
+const STORY = [
+  {
+    id:'s1', title:'첫 번째 의뢰', diff:'쉬움 · 슬롯 3개',
+    profile:{ name:'김하늘', handle:'@haneul_daily', ava:'🌤️',
+      bio:'하루하루 기록하는 중 ✍️ 좋아하는 것들로 채우는 일상',
+      stats:{followers:318, following:127} },
+    slots:[
+      { key:'job',   label:'직업',     answer:'간호사', options:['간호사','교사','개발자'],
+        hint:{post:'p1', who:'동기 지혜', ava:'🩺', text:'다음 나이트 때 스테이션에 간식 두고 갈게. 병동에서 봐~'} },
+      { key:'pet',   label:'반려동물', answer:'강아지', options:['고양이','강아지','햄스터'],
+        hint:{post:'p2', who:'이웃 주민', ava:'🌻', text:'다음엔 저희 애랑 같이 강아지 운동장 가요!'} },
+      { key:'hobby', label:'취미',     answer:'베이킹', options:['등산','베이킹','게임'],
+        hint:{post:'p3', who:'친구 수민', ava:'🍑', text:'오븐 새로 산 거 잘 돼? 저번 스콘 겉바속촉이었는데'} },
+    ],
+    posts:[
+      { id:'p1', thumb:'🌙', likes:42, date:'2일 전',
+        caption:'새벽 5시 퇴근.\n남들 출근할 때 집에 가는 이 기분, 3년째인데 아직도 적응이 안 된다',
+        comments:[{who:'동기 지혜',ava:'🩺',text:'이번 주 이브닝이지? 교대 전에 커피 사갈게'}] },
+      { id:'p2', thumb:'🌳', likes:87, date:'4일 전',
+        caption:'하루 두 번 산책은 국룰.\n비가 와도 현관 앞에서 기다리는 그 눈빛을 이길 수가 없다',
+        comments:[] },
+      { id:'p3', thumb:'🛋️', likes:31, date:'6일 전',
+        caption:'오랜만에 아무것도 안 하는 주말.\n침대와 한 몸이 되는 중',
+        comments:[{who:'친구 수민',ava:'🍑',text:'너네 집 들어설 때 나던 버터 냄새 아직도 생각나 ㅋㅋ 이번 주말에도 구워?'}] },
+      { id:'p4', thumb:'🌅', likes:54, date:'1주 전',
+        caption:'출근길 하늘이 미쳤다.\n이런 날은 지각도 용서가 된다 (안 됨)', comments:[] },
+      { id:'p5', thumb:'☕', likes:26, date:'2주 전',
+        caption:'당 충전 완료.\n오늘의 나에게 주는 작은 선물', comments:[] },
+      { id:'p6', thumb:'🌸', likes:73, date:'3주 전',
+        caption:'올해도 어김없이 왔다.\n일 년 중 제일 사진 찍게 되는 계절', comments:[] },
+    ],
+    dms:[],
+  },
+  {
+    id:'s2', title:'두 번째 의뢰', diff:'보통 · 슬롯 4개',
+    profile:{ name:'박준서', handle:'@junseo.log', ava:'🧢',
+      bio:'기록하지 않으면 사라지니까 | 매일 조금씩',
+      stats:{followers:542, following:203} },
+    slots:[
+      { key:'job',   label:'직업',      answer:'바리스타', options:['바리스타','회계사','사진작가'],
+        hint:{post:'p1', who:'단골 손님', ava:'📖', text:'핸드드립 클래스는 언제 열어요? 꼭 듣고 싶어요'} },
+      { key:'town',  label:'사는 동네', answer:'성수',     options:['홍대','성수','해운대'],
+        hint:{post:'p2', who:'친구 민규', ava:'⚽', text:'서울숲 산책하기 좋겠다, 부럽'} },
+      { key:'age',   label:'나이대',    answer:'30대',     options:['20대','30대','40대'],
+        hint:{post:'p4', who:'동혁', ava:'🏀', text:'서른 넘어서도 입맛은 대학생이네 ㅋㅋ'} },
+      { key:'hobby', label:'취미',      answer:'러닝',     options:['러닝','낚시','보드게임'],
+        hint:{post:'p3', who:'크루 지원', ava:'👟', text:'새 러닝화 잘 맞아요? 다음 모임 때 봐요!'} },
+    ],
+    posts:[
+      { id:'p1', thumb:'☕', likes:56, date:'1일 전',
+        caption:'오픈 준비 끝.\n오늘의 첫 잔이 항상 제일 긴장된다',
+        comments:[{who:'단골 손님',ava:'📖',text:'어제부터 원두 바뀌었죠? 산미가 확 다르던데요 ㅎㅎ'}] },
+      { id:'p2', thumb:'🏘️', likes:34, date:'3일 전',
+        caption:'조용한 공장 골목이었는데 어느새 팝업 성지가 됐다.\n집 앞이 핫플이 되는 기분, 신기하다',
+        comments:[] },
+      { id:'p3', thumb:'⌚', likes:48, date:'5일 전',
+        caption:'오늘의 기록.\n킬로미터당 4분 30초 벽을 드디어 깼다',
+        comments:[{who:'크루 지원',ava:'👟',text:'그 페이스면 다음 대회 접수하셔야죠!! 링크 열리면 드릴게요'}] },
+      { id:'p4', thumb:'🍜', likes:22, date:'1주 전',
+        caption:'점심은 역시 국물.\n후루룩 소리가 곧 리뷰다', comments:[] },
+      { id:'p5', thumb:'🌧️', likes:39, date:'2주 전',
+        caption:'비 오는 날의 창가.\n괜히 마음이 차분해지는 오후', comments:[] },
+      { id:'p6', thumb:'🎬', likes:29, date:'3주 전',
+        caption:'심야 영화 혼자 보기.\n엔딩크레딧까지 다 보고 나오는 게 예의지', comments:[] },
+    ],
+    dms:[
+      { who:'동혁', ava:'🏀', preview:'벌써 8년이라니 시간 무섭다',
+        msgs:[
+          {from:'them', text:'야 우리 대학 졸업한 지 벌써 8년이다'},
+          {from:'them', text:'시간 무섭네 진짜'},
+          {from:'me',   text:'그러게 ㅋㅋ 엊그제 같은데. 이번 주는 바빠서 다음 주에 보자'},
+        ]},
+    ],
+  },
+  {
+    id:'s3', title:'세 번째 의뢰', diff:'보통 · 슬롯 4개',
+    profile:{ name:'이서연', handle:'@seoyeon_off', ava:'🌙',
+      bio:'퇴근 후의 삶이 진짜 인생',
+      stats:{followers:891, following:164} },
+    slots:[
+      { key:'job',    label:'직업',          answer:'수의사',   options:['수의사','플로리스트','약사'],
+        hint:{post:'p1', who:'보호자 님', ava:'💛', text:'저희 냥이 중성화 수술 잘 끝나서 후기 남겨요. 원장님 감사합니다!'} },
+      { key:'pet',    label:'반려동물',      answer:'고양이',   options:['앵무새','고양이','거북이'],
+        hint:{post:'p3', who:'친구 예린', ava:'🎀', text:'간택당한 집사의 삶이란 ㅋㅋㅋ'} },
+      { key:'season', label:'좋아하는 계절', answer:'겨울',     options:['봄','여름','겨울'],
+        hint:{post:'p4', who:'친구 하율', ava:'🧣', text:'너 이맘때만 되면 텐션 올라가는 거 실화냐 ㅋㅋ 호빵도 사재기했지?'} },
+      { key:'hobby',  label:'취미',          answer:'클라이밍', options:['클라이밍','피아노','캠핑'],
+        hint:{post:'p2', who:'암장 친구', ava:'🪨', text:'볼더링 시작한 지 얼마나 됐다고 벌써 그 난이도예요?'} },
+    ],
+    posts:[
+      { id:'p1', thumb:'📋', likes:73, date:'1일 전',
+        caption:'오늘 마지막 진료는 태어난 지 두 달 된 아기.\n세상에서 제일 작은 심장 소리를 들었다',
+        comments:[{who:'보호자 님',ava:'💛',text:'저번에 발톱 깎다가 문 거 정말 죄송했어요 ㅠㅠ 애가 낯을 많이 가려서…'}] },
+      { id:'p2', thumb:'💪', likes:61, date:'2일 전',
+        caption:'3주 동안 붙잡던 문제를 드디어 풀었다.\n손끝 굳은살은 훈장. 내려올 때 팔이 후들후들',
+        comments:[{who:'암장 친구',ava:'🪨',text:'그 문제 크럭스에서 맨날 떨어지더니 결국 해냈네ㅋㅋ 축하!'}] },
+      { id:'p3', thumb:'📦', likes:120, date:'4일 전',
+        caption:'우리 집 룸메는 오늘도 박스 안.\n새 침대를 사줬는데 왜 포장 박스가 더 좋은 건데',
+        comments:[] },
+      { id:'p4', thumb:'🚚', likes:88, date:'1주 전',
+        caption:'그 트럭 찾아 삼만리 시즌 개막.\n일 년 중 제일 기다리는 때가 돌아왔다. 팥이냐 슈크림이냐 그것이 문제',
+        comments:[] },
+      { id:'p5', thumb:'📚', likes:35, date:'2주 전',
+        caption:'퇴근길 서점 구경.\n살 생각 없었는데 결국 두 권 들고 나옴', comments:[] },
+      { id:'p6', thumb:'🍰', likes:42, date:'3주 전',
+        caption:'당 떨어짐 주의보 발령.\n오늘의 처방은 조각 케이크', comments:[] },
+      { id:'p7', thumb:'🌆', likes:57, date:'1달 전',
+        caption:'퇴근길 노을.\n이 맛에 야근을 버틴다 (버틸 수 있는 건 아님)', comments:[] },
+      { id:'p8', thumb:'⛺', likes:31, date:'1달 전',
+        caption:'회사 워크숍으로 억지로 온 야외 취침.\n자연은 멀리서 볼 때가 제일 아름답다는 걸 배웠다', comments:[] },
+      { id:'p9', thumb:'🎧', likes:44, date:'2달 전',
+        caption:'출근길 플레이리스트 갱신.\n같은 노래 100번 듣는 타입', comments:[] },
+    ],
+    dms:[],
+  },
+  {
+    id:'s4', title:'네 번째 의뢰', diff:'어려움 · 슬롯 5개',
+    profile:{ name:'한도윤', handle:'@doyun.works', ava:'🌻',
+      bio:'느리게, 그러나 꾸준하게',
+      stats:{followers:412, following:198} },
+    slots:[
+      { key:'job',   label:'직업',      answer:'초등교사',     options:['초등교사','학원강사','사서'],
+        hint:{post:'p1', who:'동료 선생님', ava:'📐', text:'교실 환경미화 하신 거 사진 좀 보내주세요, 저희 반도 참고하게요!'} },
+      { key:'town',  label:'사는 동네', answer:'전주',         options:['전주','대전','춘천'],
+        hint:{post:'p5', who:'친구 성민', ava:'🎸', text:'비빔밥 축제 시즌이네, 이번엔 나도 데려가라'} },
+      { key:'hobby', label:'취미',      answer:'식물 키우기',  options:['식물 키우기','자전거','드럼'],
+        hint:{post:'p2', who:'팔로워', ava:'🪴', text:'몬스테라 새 잎 나왔어요? 저도 같은 화분 들였어요!'} },
+      { key:'pet',   label:'반려동물',  answer:'토끼',         options:['토끼','고양이','없음'],
+        hint:{post:'p3', who:'친구 성민', ava:'🎸', text:'귀 쫑긋 세우고 듣는 거 봐 ㅋㅋ 세상 제일 얌전한 룸메'} },
+      { key:'food',  label:'최애 음식', answer:'콩나물국밥',   options:['콩나물국밥','칼국수','막국수'],
+        hint:{post:'p4', who:'친구 성민', ava:'🎸', text:'역시 남부시장식이 진리지'} },
+    ],
+    posts:[
+      { id:'p1', thumb:'🌞', likes:64, date:'1일 전',
+        caption:'8월의 나는 세상 부자.\n방학이 있는 삶이란 이런 것',
+        comments:[{who:'동료 선생님',ava:'📐',text:'1학년 담임 처음이라더니 아이들이 도윤쌤 반 부러워해요 ㅎㅎ'}] },
+      { id:'p2', thumb:'🌿', likes:52, date:'3일 전',
+        caption:'장마철엔 과습 조심.\n얘네들 물 주는 날짜를 캘린더에 적어두는 편입니다',
+        comments:[] },
+      { id:'p3', thumb:'🥕', likes:96, date:'5일 전',
+        caption:'우리 집 얌전한 룸메이트의 저녁 식사 시간.\n오늘도 편식은 여전하다',
+        comments:[{who:'친구 성민',ava:'🎸',text:'아직도 건초만 골라 먹냐 ㅋㅋ 당근은 간식으로만 줘라'}] },
+      { id:'p4', thumb:'🍲', likes:47, date:'1주 전',
+        caption:'해장은 역시 새벽에 먹는 뜨끈한 한 그릇.\n수란 톡 터뜨려서 말아 먹는 게 정석',
+        comments:[] },
+      { id:'p5', thumb:'🏘️', likes:58, date:'2주 전',
+        caption:'주말엔 한옥마을 근처를 피해 다니는 스킬이 늘었다.\n관광객 여러분 환영합니다만 저는 좀 지나갈게요',
+        comments:[] },
+      { id:'p6', thumb:'🥁', likes:41, date:'3주 전',
+        caption:'친구 밴드 공연 보고 옴.\n드럼 치는 거 진짜 멋있더라. 나는 평생 박수 담당 예정',
+        comments:[] },
+      { id:'p7', thumb:'📚', likes:28, date:'1달 전',
+        caption:'반납 기한 하루 넘겨서 연체료 냈다.\n다 읽지도 못했는데 억울함', comments:[] },
+      { id:'p8', thumb:'☕', likes:33, date:'1달 전',
+        caption:'일요일 오후의 정적.\n커피 내리는 소리만 들리는 시간', comments:[] },
+      { id:'p9', thumb:'🌧️', likes:39, date:'2달 전',
+        caption:'비 오는 날의 낭만은 인정하지만\n출근길만은 예외로 하고 싶다', comments:[] },
+    ],
+    dms:[],
+  },
+  {
+    id:'s5', title:'다섯 번째 의뢰', diff:'최고 난도 · 슬롯 5개',
+    profile:{ name:'서지우', handle:'@jiwoo.log', ava:'🌌',
+      bio:'숫자와 감으로 일하는 사람',
+      stats:{followers:1530, following:96} },
+    slots:[
+      { key:'job',   label:'직업',      answer:'게임기획자', options:['게임기획자','웹툰작가','번역가'],
+        hint:{post:'p1', who:'동료 K', ava:'🖥️', text:'다음 시즌 신규 캐릭터 스킬셋 회의 몇 시였죠?'} },
+      { key:'age',   label:'나이대',    answer:'40대',       options:['20대','30대','40대'],
+        hint:{post:'p5', who:'동기 정훈', ava:'🍺', text:'우리 스무 살 되던 해가 벌써 22년 전이라는 게 실화냐'} },
+      { key:'hobby', label:'취미',      answer:'위스키',     options:['위스키','수영','보드게임'],
+        hint:{post:'p3', who:'바 사장님', ava:'🍸', text:'지난번에 드신 싱글몰트 새 배치 들어왔어요. 들르세요~'} },
+      { key:'town',  label:'사는 동네', answer:'판교',       options:['판교','합정','제주'],
+        hint:{post:'p4', who:'동료 K', ava:'🖥️', text:'판교역 지하 그 초밥집 오늘도 웨이팅 30분이던데요'} },
+      { key:'pet',   label:'반려동물',  answer:'고양이',     options:['고양이','강아지','없음'],
+        hint:{post:'p2', who:'동료 K', ava:'🖥️', text:'아까 회의 때 골골송 다 들렸어요 ㅋㅋ 마이크 음소거 하세요'} },
+    ],
+    posts:[
+      { id:'p1', thumb:'📊', likes:112, date:'1일 전',
+        caption:'밸런스 패치 하나에 유저 민심이 천국과 지옥을 오간다.\n오늘도 지표 대시보드와 눈싸움 중',
+        comments:[{who:'동료 K',ava:'🖥️',text:'이번 패치 지표는 선방했어요. 다음 업데이트가 문제지…'}] },
+      { id:'p2', thumb:'⌨️', likes:203, date:'2일 전',
+        caption:'재택 회의 중 키보드를 점령당했다.\n오늘 회의록에 "ㅁㄴㅇㄹㅁㄴㅇㄹ" 이 영구 기록됨',
+        comments:[] },
+      { id:'p3', thumb:'🥃', likes:87, date:'4일 전',
+        caption:'숙성 연수에 속지 말자고 다짐하면서\n결국 18년산에 손이 가는 나란 사람',
+        comments:[] },
+      { id:'p4', thumb:'🍂', likes:65, date:'1주 전',
+        caption:'출근길 테크노밸리 은행나무가 노랗게 물들기 시작했다.\n야근의 계절도 함께 오는 중',
+        comments:[] },
+      { id:'p5', thumb:'🎓', likes:58, date:'2주 전',
+        caption:'04학번 동기 모임 공지가 떴다.\n다들 어디서 뭐 하고 사는지, 갈 때마다 새롭다',
+        comments:[] },
+      { id:'p6', thumb:'📱', likes:44, date:'3주 전',
+        caption:'요즘 웹툰 정주행하느라 밤샘.\n매주 마감 지키는 작가님들은 대체 어떤 존재인가',
+        comments:[] },
+      { id:'p7', thumb:'🌊', likes:91, date:'1달 전',
+        caption:'제주 출장 사진 뒤늦게 정리.\n바다는 역시 들어가는 것보다 보는 게 최고다',
+        comments:[] },
+      { id:'p8', thumb:'🍱', likes:37, date:'1달 전',
+        caption:'혼밥 스킬 만렙 달성.\n4인 테이블도 이제 두렵지 않다', comments:[] },
+      { id:'p9', thumb:'🌃', likes:72, date:'2달 전',
+        caption:'야근 후의 밤공기.\n피곤한데 이상하게 걷고 싶은 날이 있다', comments:[] },
+    ],
+    dms:[],
+  },
+];
+
+const DAILY_POOL = [
+  {
+    id:'d1', title:'오늘의 퍼즐', diff:'슬롯 3개',
+    profile:{ name:'최민재', handle:'@mj_moment', ava:'🔥',
+      bio:'조용히, 그러나 뜨겁게',
+      stats:{followers:1204, following:88} },
+    slots:[
+      { key:'job',   label:'직업',     answer:'소방관', options:['소방관','요리사','은행원'],
+        hint:{post:'p1', who:'시민 A', ava:'🙏', text:'지난번 화재 예방 캠페인 때 뵀어요! 늘 감사합니다'} },
+      { key:'hobby', label:'취미',     answer:'자전거', options:['자전거','서핑','독서'],
+        hint:{post:'p2', who:'라이딩 메이트', ava:'🚴', text:'새 로드 프레임 뭘로 샀어요? 주말에 같이 타요'} },
+      { key:'pet',   label:'반려동물', answer:'도마뱀', options:['강아지','도마뱀','없음'],
+        hint:{post:'p3', who:'친구 태오', ava:'🎧', text:'사육장 온도는 몇 도로 맞춰놨어? 램프도 샀어?'} },
+    ],
+    posts:[
+      { id:'p1', thumb:'🌙', likes:210, date:'1일 전',
+        caption:'출동 벨이 울리지 않는 밤이\n우리에겐 제일 좋은 밤입니다. 모두 안전하게 주무세요',
+        comments:[] },
+      { id:'p2', thumb:'⛰️', likes:64, date:'3일 전',
+        caption:'업힐에서 심박수 폭발.\n그래도 다운힐에서 바람 가르는 맛에 또 오르게 된다',
+        comments:[] },
+      { id:'p3', thumb:'🤫', likes:98, date:'5일 전',
+        caption:'새 식구가 생겼습니다.\n공개는 적응 끝나면 천천히 할게요',
+        comments:[{who:'친구 태오',ava:'🎧',text:'밥이 귀뚜라미라는 게 아직도 안 믿긴다 ㅋㅋㅋ'}] },
+      { id:'p4', thumb:'🌉', likes:51, date:'1주 전',
+        caption:'야경은 언제 봐도 질리지 않는다', comments:[] },
+      { id:'p5', thumb:'🥟', likes:33, date:'2주 전',
+        caption:'야식의 유혹은 언제나 강력하다.\n오늘도 패배', comments:[] },
+      { id:'p6', thumb:'💪', likes:120, date:'3주 전',
+        caption:'체력이 곧 실력.\n오늘도 20kg 장비 메고 계단 훈련', comments:[] },
+    ],
+    dms:[],
+  },
+  {
+    id:'d2', title:'오늘의 퍼즐', diff:'슬롯 3개',
+    profile:{ name:'정유진', handle:'@yujin.diary', ava:'✈️',
+      bio:'어제는 방콕, 오늘은 서울, 내일은 어디?',
+      stats:{followers:2318, following:412} },
+    slots:[
+      { key:'job',   label:'직업',      answer:'승무원', options:['작가','미용사','승무원'],
+        hint:{post:'p1', who:'동기 세라', ava:'🌺', text:'이번 인천-방콕 스케줄 저랑 겹치던데요? 라운지에서 봐요!'} },
+      { key:'food',  label:'최애 음식', answer:'마라탕', options:['마라탕','초밥','파스타'],
+        hint:{post:'p2', who:'친구 하은', ava:'🌷', text:'난 3단계에 청경채랑 분모자 필수파'} },
+      { key:'hobby', label:'취미',      answer:'뜨개질', options:['요가','뜨개질','등산'],
+        hint:{post:'p6', who:'친구 하은', ava:'🌷', text:'실 사러 갈 때 나도 데려가~ 색 고르는 거 구경할래'} },
+    ],
+    posts:[
+      { id:'p1', thumb:'☁️', likes:95, date:'2일 전',
+        caption:'오늘도 3만 피트 위에서\n커피를 쏟지 않는 기술을 연마했다',
+        comments:[] },
+      { id:'p2', thumb:'🌶️', likes:77, date:'4일 전',
+        caption:'혈중 얼얼함 수치 보충 완료.\n2단계가 진리라는 걸 오늘도 확인했다',
+        comments:[] },
+      { id:'p3', thumb:'🌃', likes:112, date:'6일 전',
+        caption:'낯선 도시의 밤 산책.\n이 직업의 몇 안 되는 확실한 보너스', comments:[] },
+      { id:'p4', thumb:'🧳', likes:58, date:'1주 전',
+        caption:'캐리어 싸는 것도 이제 3분 컷.\n짐 싸기 장인 다 됐다', comments:[] },
+      { id:'p5', thumb:'🛁', likes:41, date:'2주 전',
+        caption:'집에 오면 제일 먼저 하는 일.\n반신욕으로 리셋', comments:[] },
+      { id:'p6', thumb:'🍵', likes:36, date:'3주 전',
+        caption:'쉬는 날의 정석.\n따뜻한 차 한 잔, 그리고 손을 바쁘게 하는 무언가', comments:[] },
+    ],
+    dms:[
+      { who:'하은', ava:'🌷', preview:'코 몇 개 잡는지도 알려줘…',
+        msgs:[
+          {from:'them', text:'유진아 겨울 오기 전에 나도 목에 두르는 거 하나만…'},
+          {from:'them', text:'코 몇 개 잡는지도 알려줘, 나 이번엔 진짜 배울래'},
+          {from:'me',   text:'ㅋㅋㅋ 알겠어 색만 골라 놔. 이번 비행 다녀와서 알려줄게'},
+        ]},
+    ],
+  },
+  {
+    id:'d3', title:'오늘의 퍼즐', diff:'슬롯 3개',
+    profile:{ name:'강태양', handle:'@sunny.day', ava:'🌞',
+      bio:'오늘의 땀은 배신하지 않는다',
+      stats:{followers:3105, following:230} },
+    slots:[
+      { key:'job',   label:'직업',      answer:'피트니스 트레이너', options:['피트니스 트레이너','물리치료사','요가강사'],
+        hint:{post:'p1', who:'회원 J', ava:'🏃', text:'PT 상담 예약은 DM으로 드리면 될까요?'} },
+      { key:'food',  label:'최애 음식', answer:'삼겹살', options:['삼겹살','샐러드','떡볶이'],
+        hint:{post:'p2', who:'친구 우진', ava:'🍺', text:'상추쌈에 마늘이랑 파채 필수인 거 인정하지?'} },
+      { key:'pet',   label:'반려동물',  answer:'앵무새', options:['강아지','없음','앵무새'],
+        hint:{post:'p3', who:'팔로워', ava:'🪶', text:'날개 깃 다듬는 건 병원에서 하는 건가요?'} },
+    ],
+    posts:[
+      { id:'p1', thumb:'🏋️', likes:180, date:'1일 전',
+        caption:'3대 400이 목표라는 회원님.\n오늘도 스쿼트 자세부터 다시 잡았습니다. 기본이 전부예요',
+        comments:[{who:'회원 J',ava:'🏃',text:'오늘 하체 하고 계단으로 못 내려갔습니다… 책임지세요'}] },
+      { id:'p2', thumb:'🔥', likes:134, date:'3일 전',
+        caption:'치팅데이엔 역시 불판 앞이지.\n지글지글 소리가 곧 힐링이다',
+        comments:[] },
+      { id:'p3', thumb:'🗣️', likes:221, date:'5일 전',
+        caption:'새벽 출근길마다 조잘조잘 배웅해주는 우리 집 수다쟁이.\n어제 드디어 "밥 줘"를 마스터했다',
+        comments:[] },
+      { id:'p4', thumb:'⏰', likes:67, date:'1주 전',
+        caption:'새벽 5시 기상 3년차.\n알람보다 먼저 눈이 떠지는 경지에 도달', comments:[] },
+      { id:'p5', thumb:'🧘', likes:88, date:'2주 전',
+        caption:'가끔은 정적인 움직임도 필요하다.\n일일 클래스 체험하고 온 날. 온몸이 배신감을 호소 중', comments:[] },
+      { id:'p6', thumb:'📺', likes:45, date:'3주 전',
+        caption:'쉬는 날은 소파와 물아일체.\n리모컨이 제일 무거운 운동기구', comments:[] },
+    ],
+    dms:[],
+  },
+];
+
+/* 그리드 셀 배경 팔레트 */
+const CELL_BG = [
+  'linear-gradient(135deg,#FFE9F0,#FFF3E4)',
+  'linear-gradient(135deg,#E9F3FF,#F0EAFF)',
+  'linear-gradient(135deg,#EAFBF1,#F6FFE4)',
+  'linear-gradient(135deg,#FFF6E0,#FFEAEA)',
+  'linear-gradient(135deg,#F0EAFF,#FFE9F0)',
+  'linear-gradient(135deg,#E4F7FF,#EAFBF1)',
+];
+
+/* ══════════════ 상태 ══════════════ */
+const MAX_HEARTS = 3;
+const state = {
+  screen:'home',
+  mode:null, levelIdx:0,
+  hearts:MAX_HEARTS,
+  selections:{}, locked:{},
+  hintUsed:false,
+  cleared:new Set(), dailyCleared:false,
+  feedTab:'grid',
+  openSlot:null, openPost:null, openDm:null,
+  viewedPosts:new Set(), viewedDms:new Set(),
+  modal:null,
+};
+
+function currentLevel(){
+  if(state.mode==='daily'){
+    const d = new Date();
+    const seed = d.getFullYear()*10000 + (d.getMonth()+1)*100 + d.getDate();
+    return DAILY_POOL[seed % DAILY_POOL.length];
+  }
+  return STORY[state.levelIdx];
+}
+function todayLabel(){
+  const d = new Date();
+  return `${d.getMonth()+1}월 ${d.getDate()}일`;
+}
+
+/* ══════════════ 렌더 ══════════════ */
+const app = document.getElementById('app');
+
+function render(){
+  app.innerHTML = state.screen==='home' ? viewHome() : viewGame();
+  bind();
+}
+
+function heartsHtml(){
+  return Array.from({length:MAX_HEARTS},(_,i)=>
+    `<span class="${i<state.hearts?'':'off'}">❤️</span>`).join('');
+}
+
+function viewHome(){
+  const levels = STORY.map((lv,i)=>{
+    const locked = i>0 && !state.cleared.has(i-1);
+    const done = state.cleared.has(i);
+    return `<button class="level-card ${locked?'locked':''}" data-story="${i}" ${locked?'disabled':''}>
+      <div class="lv-ava ring"><span>${lv.profile.ava}</span></div>
+      <div class="lv-info">
+        <div class="t">레벨 ${i+1} · ${lv.title}</div>
+        <div class="s">${lv.profile.name} ${lv.profile.handle} · ${lv.diff}</div>
+      </div>
+      <div class="lv-state">${done?'✅':locked?'🔒':'▶️'}</div>
+    </button>`;
+  }).join('');
+
+  return `
+  <div class="topbar">
+    <div class="logo">뒷<em>조사</em></div>
+    <div class="hearts">${heartsHtml()}</div>
+  </div>
+  <div class="home">
+    <h1>프로필 뒤에 숨은<br>진짜 그 사람을 찾아라 🔍</h1>
+    <p class="desc">게시물을 하나씩 열어보고, 댓글과 DM까지 뒤져서 프로필의 빈칸을 채우세요. 정답 단어는 절대 직접 나오지 않습니다. 오답을 제출하면 하트가 하나 사라져요.</p>
+    <div class="mode-label">스토리 모드</div>
+    ${levels}
+    <div class="mode-label">일일 퍼즐</div>
+    <button class="daily-card" data-daily>
+      <div class="lv-ava"><span>📅</span></div>
+      <div class="lv-info">
+        <div class="t">오늘의 퍼즐 · ${todayLabel()}</div>
+        <div class="s">${state.dailyCleared?'클리어 완료! 내일 새 퍼즐이 도착해요':'매일 자정에 새로운 인물이 도착합니다'}</div>
+      </div>
+      <div class="lv-state">${state.dailyCleared?'✅':'▶️'}</div>
+    </button>
+  </div>`;
+}
+
+function viewGame(){
+  const lv = currentLevel();
+
+  const chips = lv.slots.map(s=>{
+    const sel = state.selections[s.key];
+    const cls = state.locked[s.key] ? 'ok' : s._bad ? 'bad' : sel ? 'filled' : '';
+    return `<button class="chip ${cls}" data-slot="${s.key}" ${state.locked[s.key]?'disabled':''}>
+      <span class="k">${s.label}</span><span class="v">${sel||'???'}</span>
+    </button>`;
+  }).join('');
+
+  const st = lv.profile.stats;
+  const grid = lv.posts.map((p,i)=>`
+    <button class="cell" data-post="${p.id}" style="background:${CELL_BG[i%CELL_BG.length]}" aria-label="게시물 열기">
+      ${p.thumb}
+      ${p.comments.length?'<span class="cm-mark">💬</span>':''}
+      ${state.viewedPosts.has(p.id)?'':'<span class="new">NEW</span>'}
+    </button>`).join('');
+
+  const dmList = lv.dms.length
+    ? lv.dms.map((d,i)=>`
+      <button class="dm-item" data-dm="${i}">
+        <div class="ava">${d.ava}</div>
+        <div class="info">
+          <div class="who">${d.who}</div>
+          <div class="prev">${d.preview}</div>
+        </div>
+        ${state.viewedDms.has(i)?'':'<span class="new">NEW</span>'}
+      </button>`).join('')
+    : `<div class="dm-empty">받은 DM이 없습니다.<br>모든 단서는 게시물과 댓글 속에 있어요.</div>`;
+
+  const unreadDm = lv.dms.filter((_,i)=>!state.viewedDms.has(i)).length;
+  const allFilled = lv.slots.every(s=>state.selections[s.key]);
+
+  return `
+  <div class="topbar">
+    <button class="back" data-back>← 홈</button>
+    <div class="logo">뒷<em>조사</em></div>
+    <div class="hearts">${heartsHtml()}</div>
+  </div>
+  <div class="game">
+
+    <div class="sec-label"><span class="n">1</span>추리 보드</div>
+    <div class="board">
+      <div class="guide">칸을 눌러 단서로 알아낸 특징을 채우세요</div>
+      <div class="slots">${chips}</div>
+    </div>
+
+    <div class="sec-label"><span class="n">2</span>단서 피드 — ${lv.profile.handle}</div>
+    <div class="feed">
+      <div class="ig-top">
+        <div class="ig-head">
+          <div class="p-ava"><span>${lv.profile.ava}</span></div>
+          <div class="ig-stats">
+            <div><b>${lv.posts.length}</b><span>게시물</span></div>
+            <div><b>${st.followers}</b><span>팔로워</span></div>
+            <div><b>${st.following}</b><span>팔로잉</span></div>
+          </div>
+        </div>
+        <div class="ig-name">${lv.profile.name}</div>
+        <div class="ig-handle">${lv.profile.handle}</div>
+        <div class="ig-bio">${lv.profile.bio}</div>
+      </div>
+      <div class="tabs">
+        <button class="tab ${state.feedTab==='grid'?'on':''}" data-tab="grid">▦ 게시물</button>
+        <button class="tab ${state.feedTab==='dm'?'on':''}" data-tab="dm">✉️ DM ${unreadDm?`<span class="badge">${unreadDm}</span>`:''}</button>
+      </div>
+      ${state.feedTab==='grid' ? `<div class="grid">${grid}</div>` : `<div class="dm-list">${dmList}</div>`}
+    </div>
+
+  </div>
+  <div class="actions">
+    <div class="sec-label" style="padding:0 6px 6px"><span class="n">3</span>판정</div>
+    <div class="row">
+      <button class="btn ghost" data-hint ${state.hintUsed?'disabled':''}>💡 힌트</button>
+      <button class="btn primary" data-check ${allFilled?'':'disabled'}>프로필 확인하기</button>
+    </div>
+  </div>
+  ${state.openSlot ? viewSheet(lv) : ''}
+  ${state.openPost ? viewPost(lv) : ''}
+  ${state.openDm!==null ? viewChat(lv) : ''}
+  ${state.modal ? viewModal(lv) : ''}`;
+}
+
+function viewSheet(lv){
+  const slot = lv.slots.find(s=>s.key===state.openSlot);
+  const opts = slot.options.map(o=>`<button class="opt" data-opt="${o}">${o}</button>`).join('');
+  return `<div class="overlay" data-close>
+    <div class="sheet" role="dialog" aria-label="${slot.label} 선택">
+      <h3>${slot.label} — 단서를 보고 고르세요</h3>
+      ${opts}
+    </div>
+  </div>`;
+}
+
+function viewPost(lv){
+  const idx = lv.posts.findIndex(p=>p.id===state.openPost);
+  const p = lv.posts[idx];
+  const cms = p.comments.map(c=>`
+    <div class="pv-cm">
+      <div class="ava">${c.ava}</div>
+      <div class="txt"><b>${c.who}</b>${c.text}${c.isHint?'<span class="just">방금</span>':''}</div>
+    </div>`).join('');
+  return `<div class="overlay" data-close>
+    <div class="post-view" role="dialog" aria-label="게시물 상세">
+      <div class="pv-head">
+        <div class="ava"><span>${lv.profile.ava}</span></div>
+        <div><div class="who">${lv.profile.name}</div></div>
+        <button class="x" data-x aria-label="닫기">✕</button>
+      </div>
+      <div class="pv-img" style="background:${CELL_BG[idx%CELL_BG.length]}">${p.thumb}</div>
+      <div class="pv-actions"><span>🤍</span><span>💬</span><span>📤</span></div>
+      <div class="pv-likes">좋아요 ${p.likes}개</div>
+      <div class="pv-cap"><b>${lv.profile.handle.slice(1)}</b>${p.caption}</div>
+      <div class="pv-date">${p.date}</div>
+      ${p.comments.length?`<div class="pv-cm-label">댓글 ${p.comments.length}개</div>${cms}`:''}
+      <div class="pv-pad"></div>
+    </div>
+  </div>`;
+}
+
+function viewChat(lv){
+  const d = lv.dms[state.openDm];
+  const msgs = d.msgs.map(m=>`<div class="bubble ${m.from}">${m.text}</div>`).join('');
+  return `<div class="overlay" data-close>
+    <div class="chat" role="dialog" aria-label="DM 대화">
+      <div class="pv-head">
+        <div class="ava" style="background:var(--bg);padding:0"><span style="background:none">${d.ava}</span></div>
+        <div><div class="who">${d.who}</div></div>
+        <button class="x" data-x aria-label="닫기">✕</button>
+      </div>
+      <div class="chat-body">${msgs}</div>
+      <div class="chat-pad"></div>
+    </div>
+  </div>`;
+}
+
+function viewModal(lv){
+  if(state.modal.type==='win'){
+    const isStory = state.mode==='story';
+    const hasNext = isStory && state.levelIdx < STORY.length-1;
+    return `<div class="overlay">
+      <div class="modal">
+        <div class="big">🎉</div>
+        <h2>사건 해결!</h2>
+        <p>${lv.profile.name} 님의 프로필을 완벽하게 파악했습니다.<br>남은 하트: ${'❤️'.repeat(state.hearts)}</p>
+        ${hasNext
+          ? `<button class="btn primary" data-next>다음 레벨 →</button>`
+          : `<button class="btn primary" data-home>홈으로</button>`}
+      </div>
+    </div>`;
+  }
+  return `<div class="overlay">
+    <div class="modal">
+      <div class="big">💔</div>
+      <h2>하트를 모두 잃었어요</h2>
+      <p>단서를 다시 꼼꼼히 읽어보세요.<br>같은 레벨을 처음부터 다시 시작합니다.</p>
+      <button class="btn primary" data-retry>다시 도전</button>
+    </div>
+  </div>`;
+}
+
+/* ══════════════ 이벤트 ══════════════ */
+function bind(){
+  app.querySelectorAll('[data-story]').forEach(b=>b.onclick=()=>startLevel('story',+b.dataset.story));
+  const daily = app.querySelector('[data-daily]');
+  if(daily) daily.onclick = ()=>startLevel('daily',0);
+
+  const back = app.querySelector('[data-back]');
+  if(back) back.onclick = ()=>{ state.screen='home'; closeAll(); render(); };
+
+  app.querySelectorAll('.chip:not(.ok)').forEach(c=>c.onclick=()=>{ state.openSlot=c.dataset.slot; render(); });
+  app.querySelectorAll('[data-tab]').forEach(t=>t.onclick=()=>{ state.feedTab=t.dataset.tab; render(); });
+
+  app.querySelectorAll('[data-post]').forEach(c=>c.onclick=()=>{
+    state.openPost=c.dataset.post;
+    state.viewedPosts.add(c.dataset.post);
+    render();
+  });
+  app.querySelectorAll('[data-dm]').forEach(c=>c.onclick=()=>{
+    state.openDm=+c.dataset.dm;
+    state.viewedDms.add(+c.dataset.dm);
+    render();
+  });
+
+  app.querySelectorAll('.overlay[data-close]').forEach(ov=>{
+    ov.onclick = e=>{ if(e.target===ov){ closeAll(); render(); } };
+  });
+  app.querySelectorAll('[data-x]').forEach(x=>x.onclick=()=>{ closeAll(); render(); });
+
+  app.querySelectorAll('[data-opt]').forEach(o=>o.onclick=()=>{
+    state.selections[state.openSlot]=o.dataset.opt;
+    currentLevel().slots.forEach(s=>{ if(s.key===state.openSlot) s._bad=false; });
+    state.openSlot=null; render();
+  });
+
+  const hint = app.querySelector('[data-hint]');
+  if(hint) hint.onclick = useHint;
+  const check = app.querySelector('[data-check]');
+  if(check) check.onclick = grade;
+  const next = app.querySelector('[data-next]');
+  if(next) next.onclick = ()=>startLevel('story', state.levelIdx+1);
+  const homeBtn = app.querySelector('[data-home]');
+  if(homeBtn) homeBtn.onclick = ()=>{ state.screen='home'; state.modal=null; render(); };
+  const retry = app.querySelector('[data-retry]');
+  if(retry) retry.onclick = ()=>startLevel(state.mode, state.levelIdx);
+}
+
+function closeAll(){
+  state.openSlot=null; state.openPost=null; state.openDm=null; state.modal=null;
+}
+
+function startLevel(mode, idx){
+  state.mode=mode; state.levelIdx=idx;
+  state.hearts=MAX_HEARTS;
+  state.selections={}; state.locked={};
+  state.hintUsed=false; state.feedTab='grid';
+  state.viewedPosts=new Set(); state.viewedDms=new Set();
+  closeAll();
+  const lv = (mode==='daily')
+    ? DAILY_POOL[(new Date().getFullYear()*10000+(new Date().getMonth()+1)*100+new Date().getDate()) % DAILY_POOL.length]
+    : STORY[idx];
+  /* 이전 판에서 힌트로 달린 댓글 제거 + 상태 초기화 */
+  lv.posts.forEach(p=>{ p.comments = p.comments.filter(c=>!c.isHint); });
+  lv.slots.forEach(s=>{ s._bad=false; s._hintShown=false; });
+  state.screen='game';
+  render();
+}
+
+function grade(){
+  const lv = currentLevel();
+  let wrong = 0;
+  lv.slots.forEach(s=>{
+    if(state.locked[s.key]) return;
+    if(state.selections[s.key]===s.answer){
+      state.locked[s.key]=true; s._bad=false;
+    } else {
+      s._bad=true; wrong++;
+    }
+  });
+  if(wrong===0){
+    if(state.mode==='story') state.cleared.add(state.levelIdx);
+    else state.dailyCleared=true;
+    state.modal={type:'win'};
+  } else {
+    state.hearts--;
+    if(state.hearts<=0) state.modal={type:'over'};
+    else toast(`오답 ${wrong}개! 하트가 1개 줄었어요`);
+  }
+  render();
+}
+
+/* 힌트: 정답을 직접 알려주지 않고, 미해결 슬롯 하나와 관련된
+   게시물에 '새 댓글'이 달린다. 어느 게시물인지는 NEW 뱃지로만 표시 */
+function useHint(){
+  const lv = currentLevel();
+  const targets = lv.slots.filter(s=>!state.locked[s.key] && s.hint && !s._hintShown);
+  if(!targets.length){ toast('더 받을 수 있는 제보가 없어요'); return; }
+  const slot = targets[Math.floor(Math.random()*targets.length)];
+  const post = lv.posts.find(p=>p.id===slot.hint.post);
+  post.comments.push({who:slot.hint.who, ava:slot.hint.ava, text:slot.hint.text, isHint:true});
+  slot._hintShown = true;
+  state.viewedPosts.delete(post.id);   /* NEW 뱃지 다시 표시 */
+  state.hintUsed = true;
+  toast('💡 누군가 피드에 새 댓글을 남겼어요');
+  render();
+}
+
+let toastTimer=null;
+function toast(msg){
+  document.querySelectorAll('.toast').forEach(t=>t.remove());
+  const t=document.createElement('div');
+  t.className='toast'; t.textContent=msg;
+  document.body.appendChild(t);
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.remove(),2200);
+}
+
+render();
+</script>
+</body>
+</html>
